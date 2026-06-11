@@ -292,11 +292,22 @@ function showCardAt(idx) {
   document.querySelectorAll('.nav-dot').forEach((d, i) => d.classList.toggle('active', i === idx));
 
   // Highlight cell on pitch
+  let activeCell = null;
   document.querySelectorAll('.cell').forEach(c => {
     const active = c.dataset.idx == idx;
-    c.setAttribute('stroke', active ? '#000000' : c.getAttribute('fill'));
-    c.setAttribute('stroke-width', active ? '1.5' : '0.5');
+    if (active) {
+      activeCell = c;
+      c.setAttribute('stroke', '#000000');
+      c.setAttribute('stroke-width', '2');
+      c.setAttribute('opacity', '1');
+    } else {
+      c.setAttribute('stroke', 'none');
+      c.setAttribute('stroke-width', '0');
+      c.setAttribute('opacity', '0.25');
+    }
   });
+  // Move active cell to top of SVG so outline isn't occluded
+  if (activeCell) activeCell.parentNode.appendChild(activeCell);
 
   let html = `<div class="card">
     <div class="card-header">
