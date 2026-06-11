@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WC 2026 — Markov Advantages</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f1923; color: #e0e0e0; padding: 12px; max-width: 600px; margin: 0 auto; }
+h1 { font-size: 20px; margin-bottom: 8px; color: #fff; }
+.tabs { display: flex; gap: 4px; margin-bottom: 12px; }
+.tab { flex: 1; padding: 8px; text-align: center; background: #1a2634; border: 1px solid #2a3a4a; border-radius: 6px; cursor: pointer; font-size: 13px; }
+.tab.active { background: #e94560; border-color: #e94560; color: #fff; font-weight: 600; }
+select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #2a3a4a; background: #1a2634; color: #e0e0e0; font-size: 14px; margin-bottom: 12px; }
+.pitch-container { position: relative; width: 100%; aspect-ratio: 120/80; background: #2d5a27; border-radius: 6px; overflow: hidden; margin-bottom: 12px; border: 2px solid #3a7a34; }
+.pitch-svg { width: 100%; height: 100%; }
+.cell { cursor: pointer; transition: opacity 0.2s; }
+.cell:hover { stroke-width: 2; }
+.legend { display: flex; gap: 12px; justify-content: center; font-size: 11px; margin-bottom: 12px; color: #aaa; }
+.legend span { display: inline-flex; align-items: center; gap: 4px; }
+.legend .dot { width: 10px; height: 10px; border-radius: 2px; }
+.card { background: #1a2634; border: 1px solid #2a3a4a; border-radius: 8px; padding: 12px; margin-bottom: 8px; }
+.card-title { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+.card-title .strength { color: #2ecc71; }
+.card-title .weakness { color: #e74c3c; }
+.seq { font-size: 11px; color: #bbb; margin: 4px 0; line-height: 1.4; }
+.seq .arrow { color: #666; }
+.seq .not-roster { color: #e74c3c; }
+.no-data { text-align: center; color: #666; padding: 40px; }
+.threshold { margin-bottom: 12px; }
+.threshold label { font-size: 11px; color: #888; }
+.threshold input { width: 100%; }
+#threshold-val { color: #e94560; }
+.category-list { }
+.cat-team { font-size: 12px; padding: 6px 0; border-bottom: 1px solid #1a2634; display: flex; justify-content: space-between; }
+.cat-team .adv { font-weight: 600; }
+</style>
+</head>
+<body>
+<h1>⚽ WC 2026 Markov Advantages</h1>
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('team')">By Team</div>
+  <div class="tab" onclick="switchTab('category')">By Category</div>
+</div>
+<div id="team-view">
+  <select id="team-select" onchange="selectTeam(this.value)">
+    <option value="">Select a team...</option>
+  </select>
+  <div class="threshold">
+    <label>Threshold: <span id="threshold-val">0.0005</span></label>
+    <input type="range" id="threshold-slider" min="1" max="25" value="5" oninput="updateThreshold(this.value)">
+  </div>
+  <div class="pitch-container">
+    <svg class="pitch-svg" viewBox="0 0 120 80" id="pitch"></svg>
+  </div>
+  <div class="legend">
+    <span><span class="dot" style="background:#2ecc71"></span> Strength</span>
+    <span><span class="dot" style="background:#e74c3c"></span> Weakness</span>
+    <span>Tap cell for details</span>
+  </div>
+  <div id="cards"></div>
+</div>
+<div id="category-view" style="display:none">
+  <select id="cat-select" onchange="selectCategory(this.value)">
+    <option value="">Select a category...</option>
+  </select>
+  <div id="cat-results"></div>
+</div>
+
+<script>
+let DATA = null;
+let currentTeam = '';
+let currentThreshold = 0.0005;
+
+fetch('data/teams.json').then(r => r.json()).then(d => {
+  DATA = d;
+  const sel = document.getElementById('team-select');
+  d.available_teams.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t; opt.textContent = t;
+    if (!d.teams[t]) opt.disabled = true;
+    sel.appendChild(opt);
+  });
+  const catSel = document.getElementById('cat-select');
+  d.categories.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c; opt.textContent = c;
+    catSel.appendChild(opt);
+  });
+  drawPitchLines();
+});
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('team-view').style.display = tab === 'team' ? '' : 'none';
+  document.getElementById('category-view').style.display = tab === 'category' ? '' : 'none';
+}
+
+function updateThreshold(val) {
+  currentThreshold = val * 0.0001;
+  document.getElementById('threshold-val').textContent = currentThreshold.toFixed(4);
+  if (currentTeam) renderTeam(currentTeam);
+}
+
+function drawPitchLines() {
+  const svg = document.getElementById('pitch');
+  svg.innerHTML = `
+    <rect x="0" y="0" width="120" height="80" fill="#2d5a27"/>
+    <line x1="60" y1="0" x2="60" y2="80" stroke="#fff" stroke-width="0.3" opacity="0.5"/>
+    <rect x="0" y="18" width="18" height="44" fill="none" stroke="#fff" stroke-width="0.3" opacity="0.5"/>
+    <rect x="102" y="18" width="18" height="44" fill="none" stroke="#fff" stroke-width="0.3" opacity="0.5"/>
+    <rect x="0" y="30" width="6" height="20" fill="none" stroke="#fff" stroke-width="0.3" opacity="0.5"/>
+    <rect x="114" y="30" width="6" height="20" fill="none" stroke="#fff" stroke-width="0.3" opacity="0.5"/>
+    <circle cx="60" cy="40" r="9.15" fill="none" stroke="#fff" stroke-width="0.3" opacity="0.5"/>
+    <rect x="0" y="0" width="120" height="80" fill="none" stroke="#fff" stroke-width="0.4" opacity="0.7"/>
+    <text x="115" y="4" font-size="3" fill="#fff" opacity="0.5">→ Goal</text>
+  `;
+}
+
+function selectTeam(team) {
+  currentTeam = team;
+  renderTeam(team);
+}
+
+function renderTeam(team) {
+  const svg = document.getElementById('pitch');
+  drawPitchLines();
+  const cards = document.getElementById('cards');
+  cards.innerHTML = '';
+
+  if (!DATA.teams[team]) {
+    cards.innerHTML = '<div class="no-data">No data available for this team</div>';
+    return;
+  }
+
+  const states = DATA.teams[team].filter(s => Math.abs(s.a) >= currentThreshold);
+  if (states.length === 0) {
+    cards.innerHTML = '<div class="no-data">No states above threshold. Try lowering it.</div>';
+    return;
+  }
+
+  const maxAdv = Math.max(...states.map(s => Math.abs(s.a)));
+
+  states.forEach((s, idx) => {
+    const x = s.gx * 10 - 5;
+    const y = s.gy * 10 - 5;
+    const color = s.a > 0 ? '#2ecc71' : '#e74c3c';
+    const opacity = 0.3 + 0.5 * (Math.abs(s.a) / maxAdv);
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('x', x); rect.setAttribute('y', y);
+    rect.setAttribute('width', 10); rect.setAttribute('height', 10);
+    rect.setAttribute('fill', color); rect.setAttribute('opacity', opacity);
+    rect.setAttribute('stroke', color); rect.setAttribute('stroke-width', '0.5');
+    rect.setAttribute('class', 'cell');
+    rect.onclick = () => showCard(team, s, idx);
+    svg.appendChild(rect);
+  });
+}
+
+function showCard(team, state, idx) {
+  const cards = document.getElementById('cards');
+  const type = state.a > 0 ? 'strength' : 'weakness';
+  const typeClass = type;
+  const who = state.tr === 'teamA' ? team : 'Opponent';
+
+  let html = `<div class="card">
+    <div class="card-title"><span class="${typeClass}">${type === 'strength' ? '▲' : '▼'} ${who}: ${state.c}</span> ${state.a > 0 ? '+' : ''}${state.a.toFixed(4)} (${state.n} obs)</div>`;
+
+  // Sequences
+  const seqs = DATA.sequences[team]?.[state.s];
+  if (seqs) {
+    const roster = new Set(DATA.rosters[team] || []);
+    seqs.forEach(seq => {
+      const [prev, player, l2, next] = seq;
+      const prevParts = prev.split(' — ');
+      const nextParts = next.split(' — ');
+      const fmtName = (name) => {
+        const parts = name.split(' ');
+        const last = parts[parts.length - 1];
+        const onRoster = [...roster].some(rn => name.includes(rn) || rn.includes(last));
+        return onRoster ? last : `<span class="not-roster">${last}</span>`;
+      };
+      const prevStr = prevParts.length === 2 ? `${fmtName(prevParts[0])} ${prevParts[1]}` : prev;
+      const currStr = `${fmtName(player)} ${l2}`;
+      const nextStr = nextParts.length === 2 ? `${fmtName(nextParts[0])} ${nextParts[1]}` : next;
+      html += `<div class="seq">${prevStr} <span class="arrow">→</span> ${currStr} <span class="arrow">→</span> ${nextStr}</div>`;
+    });
+  }
+  html += '</div>';
+  cards.innerHTML = html;
+}
+
+function selectCategory(cat) {
+  const results = document.getElementById('cat-results');
+  if (!cat) { results.innerHTML = ''; return; }
+
+  // Gather all teams' states in this category
+  let entries = [];
+  for (const [team, states] of Object.entries(DATA.teams)) {
+    states.filter(s => s.c === cat && s.n >= 5).forEach(s => {
+      entries.push({ team, ...s });
+    });
+  }
+
+  // Top strengths
+  const strengths = entries.filter(e => e.a > 0).sort((a, b) => b.a - a.a).slice(0, 15);
+  const weaknesses = entries.filter(e => e.a < 0).sort((a, b) => a.a - b.a).slice(0, 15);
+
+  let html = '<div class="card"><div class="card-title"><span class="strength">Top Strengths</span></div>';
+  strengths.forEach(e => {
+    html += `<div class="cat-team"><span>${e.team} (${e.gx},${e.gy}) ${e.tr}</span><span class="adv" style="color:#2ecc71">+${e.a.toFixed(4)}</span></div>`;
+  });
+  html += '</div>';
+
+  if (weaknesses.length > 0) {
+    html += '<div class="card"><div class="card-title"><span class="weakness">Top Weaknesses</span></div>';
+    weaknesses.forEach(e => {
+      html += `<div class="cat-team"><span>${e.team} (${e.gx},${e.gy}) ${e.tr}</span><span class="adv" style="color:#e74c3c">${e.a.toFixed(4)}</span></div>`;
+    });
+    html += '</div>';
+  }
+  results.innerHTML = html;
+}
+</script>
+</body>
+</html>
