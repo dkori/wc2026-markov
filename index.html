@@ -50,7 +50,7 @@ select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #2a3a
 .fixture .teams { flex: 1; text-align: center; font-size: 13px; }
 .fixture .vs { color: #666; font-size: 11px; margin: 0 6px; }
 .fixture .team-name { cursor: pointer; }
-.fixture .team-name.has-data { color: #3498db; font-weight: 600; }
+.fixture .team-name.has-data { color: #fff; font-weight: 600; }
 .fixture .meta { font-size: 10px; color: #666; }
 .fixture .badge { font-size: 9px; background: #3498db33; color: #3498db; padding: 1px 4px; border-radius: 3px; margin-left: 4px; }
 .fixture .counts { font-size: 9px; display: block; margin-top: 2px; }
@@ -69,7 +69,9 @@ select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #2a3a
 </div>
 
 <div id="schedule-view" style="display:none">
+  <div style="font-size:10px;color:#888;margin-bottom:4px">Minimum advantage to display:</div>
   <div class="threshold-btns" id="schedule-thresh-btns"></div>
+  <div style="font-size:10px;color:#888;margin-bottom:10px;text-align:center"><span style="color:#3498db">■</span> strengths &nbsp; <span style="color:#e74c3c">■</span> weaknesses &nbsp; at selected threshold</div>
   <div id="schedule-list"></div>
 </div>
 <div id="team-view">
@@ -168,10 +170,10 @@ function renderScheduleList() {
       '<div class="meta">' + f.date + '</div>' +
       '<div class="teams">' +
         '<span class="team-name' + (homeData?' has-data':'') + '" onclick="goToTeam(\'' + f.home.replace(/'/g,"\\'") + '\')">' + f.home + '</span>' +
-        (showHome ? '<span class="counts"><span class="str-count">' + homeStr + 'S</span> <span class="wk-count">' + homeWk + 'W</span></span>' : '') +
+        (showHome ? '<span class="counts"><span class="str-count">' + homeStr + ' str</span> · <span class="wk-count">' + homeWk + ' wk</span></span>' : '') +
         '<span class="vs"> vs </span>' +
         '<span class="team-name' + (awayData?' has-data':'') + '" onclick="goToTeam(\'' + f.away.replace(/'/g,"\\'") + '\')">' + f.away + '</span>' +
-        (showAway ? '<span class="counts"><span class="str-count">' + awayStr + 'S</span> <span class="wk-count">' + awayWk + 'W</span></span>' : '') +
+        (showAway ? '<span class="counts"><span class="str-count">' + awayStr + ' str</span> · <span class="wk-count">' + awayWk + ' wk</span></span>' : '') +
       '</div>' +
       '<div class="meta">' + f.venue + '</div>' +
     '</div>';
