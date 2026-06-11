@@ -32,6 +32,8 @@ select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #2a3a
 .seq { font-size: 12px; color: #ccc; margin: 6px 0; padding: 6px 8px; background: #0f1923; border-radius: 4px; line-height: 1.5; }
 .seq .arrow { color: #e94560; font-weight: bold; }
 .seq .opp { color: #888; font-style: italic; }
+.seq .meta { color: #666; font-size: 10px; display: block; margin-top: 2px; }
+.seq-container { max-height: 280px; overflow-y: auto; border-radius: 6px; }
 .nav-dots { display: flex; justify-content: center; gap: 6px; margin-bottom: 12px; }
 .nav-dot { width: 8px; height: 8px; border-radius: 50%; background: #2a3a4a; cursor: pointer; }
 .nav-dot.active { background: #e94560; }
@@ -223,13 +225,12 @@ function showCardAt(idx) {
 
   const seqs = DATA.sequences[team]?.[s.s];
   if (seqs && seqs.length > 0) {
+    html += '<div class="seq-container">';
     seqs.forEach(seq => {
-      const [prev, player, l2, next] = seq;
-      const fmtPrev = prev.startsWith('Opponent') ? `<span class="opp">${prev}</span>` : prev;
-      const fmtPlayer = player === 'Opponent' ? `<span class="opp">Opponent</span> ${l2}` : `${player} ${l2}`;
-      const fmtNext = next.startsWith('Opponent') ? `<span class="opp">${next}</span>` : next;
-      html += `<div class="seq">${fmtPrev} <span class="arrow">→</span> ${fmtPlayer} <span class="arrow">→</span> ${fmtNext}</div>`;
+      const [prev, player, l2, next, opponent, comp] = seq;
+      html += `<div class="seq">${prev} <span class="arrow">→</span> ${player} ${l2} <span class="arrow">→</span> ${next}<span class="meta">vs ${opponent} · ${comp}</span></div>`;
     });
+    html += '</div>';
   } else {
     html += '<div class="seq" style="color:#666">No sequence data available</div>';
   }
