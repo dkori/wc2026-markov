@@ -302,10 +302,14 @@ function showCardAt(idx) {
 
   const seqs = DATA.sequences[team]?.[s.s];
   if (seqs && seqs.length > 0) {
+    const roster = DATA.rosters[team] || [];
+    const isOwnTeamState = s.tr === 'teamA';
     html += '<div class="seq-container">';
     seqs.forEach(seq => {
       const [prev, player, l2, next, opponent, comp] = seq;
-      html += `<div class="seq">${prev} <span class="arrow">→</span> ${player} ${l2} <span class="arrow">→</span> ${next}<span class="meta">vs ${opponent} · ${comp}</span></div>`;
+      const notRostered = isOwnTeamState && roster.length > 0 && !roster.includes(player);
+      const playerHtml = notRostered ? `<span style="color:#e74c3c">${player}</span>` : player;
+      html += `<div class="seq">${prev} <span class="arrow">→</span> ${playerHtml} ${l2} <span class="arrow">→</span> ${next}<span class="meta">vs ${opponent} · ${comp}</span></div>`;
     });
     html += '</div>';
   } else {
@@ -326,9 +330,10 @@ function navCard(dir) {
 function selectCategory(cat) {
   const results = document.getElementById('cat-results');
   if (!cat) { results.innerHTML = ''; return; }
+  const highThresh = DATA.thresholds[2];
   let entries = [];
   for (const [team, states] of Object.entries(DATA.teams)) {
-    states.filter(s => s.c === cat && s.n >= 5).forEach(s => entries.push({ team, ...s }));
+    states.filter(s => s.c === cat && s.n >= 5 && Math.abs(s.a) >= highThresh).forEach(s => entries.push({ team, ...s }));
   }
   const strengths = entries.filter(e => e.a > 0).sort((a, b) => b.a - a.a).slice(0, 20);
   const weaknesses = entries.filter(e => e.a < 0).sort((a, b) => a.a - b.a).slice(0, 20);
