@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WC 2026 — Markov Advantages</title>
+<title>Goldfish G+ | WC 2026</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f1923; color: #e0e0e0; padding: 12px; max-width: 600px; margin: 0 auto; }
@@ -46,16 +46,28 @@ select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #2a3a
 .cat-team { font-size: 13px; padding: 8px 0; border-bottom: 1px solid #1e2e3e; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
 .cat-team:hover { background: #1e2e3e; }
 .cat-team .adv { font-weight: 600; font-size: 12px; }
+.fixture { background: #1a2634; border: 1px solid #2a3a4a; border-radius: 8px; padding: 10px 12px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; }
+.fixture .teams { flex: 1; text-align: center; font-size: 13px; }
+.fixture .vs { color: #666; font-size: 11px; margin: 0 6px; }
+.fixture .team-name { cursor: pointer; }
+.fixture .team-name.has-data { color: #2ecc71; font-weight: 600; }
+.fixture .meta { font-size: 10px; color: #666; }
+.fixture .badge { font-size: 9px; background: #2ecc7133; color: #2ecc71; padding: 1px 4px; border-radius: 3px; margin-left: 4px; }
+.group-header { font-size: 12px; color: #e94560; margin: 12px 0 6px; font-weight: 600; }
 </style>
 </head>
 <body>
-<h1>⚽ WC 2026 Markov Advantages</h1>
-<p class="subtitle">Bayesian transition model trained on international tournaments 2018–2024</p>
+<h1>🐠 Goldfish G+</h1>
+<p class="subtitle">Memoryless Markov transition model · WC 2026</p>
 <div class="tabs">
+  <div class="tab" onclick="switchTab('schedule')">Schedule</div>
   <div class="tab active" onclick="switchTab('team')">By Team</div>
   <div class="tab" onclick="switchTab('category')">By Category</div>
 </div>
 
+<div id="schedule-view" style="display:none">
+  <div id="schedule-list"></div>
+</div>
 <div id="team-view">
   <select id="team-select" onchange="selectTeam(this.value)">
     <option value="">Select a team...</option>
@@ -106,7 +118,6 @@ fetch('data/teams.json').then(r => r.json()).then(d => {
     opt.value = c; opt.textContent = c;
     catSel.appendChild(opt);
   });
-  // Threshold buttons
   const tDiv = document.getElementById('thresh-btns');
   const labels = ['Low', 'Mid', 'High'];
   d.thresholds.forEach((t, i) => {
@@ -117,13 +128,44 @@ fetch('data/teams.json').then(r => r.json()).then(d => {
     tDiv.appendChild(btn);
   });
   drawPitchLines();
+  // Load fixtures
+  fetch('data/fixtures.json').then(r=>r.json()).then(renderSchedule);
 });
+
+function renderSchedule(fixtures) {
+  const el = document.getElementById('schedule-list');
+  let lastGroup = '';
+  let html = '';
+  fixtures.forEach(f => {
+    if (f.group !== lastGroup) {
+      html += '<div class="group-header">Group ' + f.group + '</div>';
+      lastGroup = f.group;
+    }
+    const homeData = DATA.teams[f.home];
+    const awayData = DATA.teams[f.away];
+    const homeCount = homeData ? homeData.filter(s=>Math.abs(s.a)>=currentThreshold).length : 0;
+    const awayCount = awayData ? awayData.filter(s=>Math.abs(s.a)>=currentThreshold).length : 0;
+    html += '<div class="fixture">' +
+      '<div class="meta">' + f.date + '</div>' +
+      '<div class="teams">' +
+        '<span class="team-name' + (homeData?' has-data':'') + '" onclick="goToTeam(\'' + f.home.replace(/'/g,"\\'") + '\')">' + f.home + '</span>' +
+        (homeCount ? '<span class="badge">' + homeCount + '</span>' : '') +
+        '<span class="vs"> vs </span>' +
+        '<span class="team-name' + (awayData?' has-data':'') + '" onclick="goToTeam(\'' + f.away.replace(/'/g,"\\'") + '\')">' + f.away + '</span>' +
+        (awayCount ? '<span class="badge">' + awayCount + '</span>' : '') +
+      '</div>' +
+      '<div class="meta">' + f.venue + '</div>' +
+    '</div>';
+  });
+  el.innerHTML = html;
+}
 
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   event.target.classList.add('active');
   document.getElementById('team-view').style.display = tab === 'team' ? '' : 'none';
   document.getElementById('category-view').style.display = tab === 'category' ? '' : 'none';
+  document.getElementById('schedule-view').style.display = tab === 'schedule' ? '' : 'none';
 }
 
 function setThreshold(t, btn) {
@@ -280,7 +322,9 @@ function goToTeam(team) {
 }
 
 function switchTabDirect(tab) {
-  document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', (tab === 'team' ? i === 0 : i === 1)));
+  document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', 
+    (tab==='schedule'&&i===0)||(tab==='team'&&i===1)||(tab==='category'&&i===2)));
+  document.getElementById('schedule-view').style.display = tab === 'schedule' ? '' : 'none';
   document.getElementById('team-view').style.display = tab === 'team' ? '' : 'none';
   document.getElementById('category-view').style.display = tab === 'category' ? '' : 'none';
 }
