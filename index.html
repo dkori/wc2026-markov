@@ -66,7 +66,8 @@ select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #2a3a
 <details style="margin-bottom:12px;background:#1a2634;border:1px solid #2a3a4a;border-radius:6px;padding:10px;font-size:11px;color:#aaa">
 <summary style="cursor:pointer;color:#e0e0e0;font-size:12px;font-weight:600">How it works ▾</summary>
 <p style="margin-top:8px;line-height:1.6">Every on-ball action in a match (pass, carry, duel, etc.) is a state in a Markov chain, defined by action type, pitch zone, and which team has the ball. We compute <strong>absorption probabilities</strong>: given possession is in state X, what's the probability it ends in a goal for vs. against?</p>
-<p style="margin-top:6px;line-height:1.6">A hierarchical Bayesian prior (2.2M transitions from 314 international matches) regularizes each team's observed transitions. The <strong>advantage</strong> is how much a team's net scoring probability from a state exceeds the prior average. Positive = strength, negative = weakness.</p>
+<p style="margin-top:6px;line-height:1.6">A hierarchical Bayesian prior (2.2M transitions from 314 matches across World Cup 2018 & 2022, Euro 2020 & 2024, AFCON 2023, and Copa América 2024) regularizes each team's observed transitions. Team-specific updates use World Cup 2022 plus each confederation's most recent continental tournament (Euro 2024, AFCON 2023, Copa 2024).</p>
+<p style="margin-top:6px;line-height:1.6">The <strong>advantage</strong> is how much a team's net scoring probability from a state exceeds the prior average. Positive = strength, negative = weakness.</p>
 <p style="margin-top:6px;line-height:1.6">Shots that directly led to goals are excluded — the insight is in the buildup patterns that shift scoring probability before the final shot.</p>
 </details>
 <div class="tabs">
