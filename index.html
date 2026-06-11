@@ -26,7 +26,7 @@ select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #2a3a
 .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .card-title { font-size: 15px; font-weight: 600; }
 .card-badge { font-size: 11px; padding: 3px 8px; border-radius: 12px; font-weight: 600; }
-.card-badge.strength { background: #2ecc7133; color: #2ecc71; }
+.card-badge.strength { background: #3498db33; color: #3498db; }
 .card-badge.weakness { background: #e74c3c33; color: #e74c3c; }
 .card-meta { font-size: 11px; color: #888; margin-bottom: 10px; }
 .seq { font-size: 12px; color: #ccc; margin: 6px 0; padding: 6px 8px; background: #0f1923; border-radius: 4px; line-height: 1.5; }
@@ -37,7 +37,7 @@ select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #2a3a
 .nav-dots { display: flex; justify-content: center; gap: 6px; margin-bottom: 12px; }
 .nav-dot { width: 8px; height: 8px; border-radius: 50%; background: #2a3a4a; cursor: pointer; }
 .nav-dot.active { background: #e94560; }
-.nav-dot.strength { border: 1px solid #2ecc71; }
+.nav-dot.strength { border: 1px solid #3498db; }
 .nav-dot.weakness { border: 1px solid #e74c3c; }
 .nav-arrows { display: flex; justify-content: space-between; margin-bottom: 12px; }
 .nav-btn { padding: 8px 16px; background: #1a2634; border: 1px solid #2a3a4a; border-radius: 6px; cursor: pointer; color: #e0e0e0; font-size: 13px; }
@@ -50,9 +50,12 @@ select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #2a3a
 .fixture .teams { flex: 1; text-align: center; font-size: 13px; }
 .fixture .vs { color: #666; font-size: 11px; margin: 0 6px; }
 .fixture .team-name { cursor: pointer; }
-.fixture .team-name.has-data { color: #2ecc71; font-weight: 600; }
+.fixture .team-name.has-data { color: #3498db; font-weight: 600; }
 .fixture .meta { font-size: 10px; color: #666; }
-.fixture .badge { font-size: 9px; background: #2ecc7133; color: #2ecc71; padding: 1px 4px; border-radius: 3px; margin-left: 4px; }
+.fixture .badge { font-size: 9px; background: #3498db33; color: #3498db; padding: 1px 4px; border-radius: 3px; margin-left: 4px; }
+.fixture .counts { font-size: 9px; display: block; margin-top: 2px; }
+.fixture .counts .str-count { color: #3498db; }
+.fixture .counts .wk-count { color: #e74c3c; }
 .group-header { font-size: 12px; color: #e94560; margin: 12px 0 6px; font-weight: 600; }
 </style>
 </head>
@@ -66,6 +69,7 @@ select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #2a3a
 </div>
 
 <div id="schedule-view" style="display:none">
+  <div class="threshold-btns" id="schedule-thresh-btns"></div>
   <div id="schedule-list"></div>
 </div>
 <div id="team-view">
@@ -77,7 +81,7 @@ select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #2a3a
     <svg class="pitch-svg" viewBox="0 0 120 80" id="pitch"></svg>
   </div>
   <div class="legend">
-    <span><span class="dot" style="background:#2ecc71"></span> Strength</span>
+    <span><span class="dot" style="background:#3498db"></span> Strength</span>
     <span><span class="dot" style="background:#e74c3c"></span> Weakness</span>
     <span>Tap cell for detail</span>
   </div>
@@ -119,13 +123,17 @@ fetch('data/teams.json').then(r => r.json()).then(d => {
     catSel.appendChild(opt);
   });
   const tDiv = document.getElementById('thresh-btns');
+  const sDIv = document.getElementById('schedule-thresh-btns');
   const labels = ['Low', 'Mid', 'High'];
   d.thresholds.forEach((t, i) => {
-    const btn = document.createElement('div');
-    btn.className = 'thresh-btn' + (i === 1 ? ' active' : '');
-    btn.textContent = labels[i] + ' (' + t + ')';
-    btn.onclick = () => setThreshold(t, btn);
-    tDiv.appendChild(btn);
+    [tDiv, sDIv].forEach(container => {
+      const btn = document.createElement('div');
+      btn.className = 'thresh-btn' + (i === 1 ? ' active' : '');
+      btn.textContent = labels[i] + ' (' + t + ')';
+      btn.setAttribute('data-t', t);
+      btn.onclick = () => setThreshold(t, btn);
+      container.appendChild(btn);
+    });
   });
   drawPitchLines();
   // Load fixtures
@@ -133,6 +141,13 @@ fetch('data/teams.json').then(r => r.json()).then(d => {
 });
 
 function renderSchedule(fixtures) {
+  window._fixtures = fixtures;
+  renderScheduleList();
+}
+
+function renderScheduleList() {
+  const fixtures = window._fixtures;
+  if (!fixtures) return;
   const el = document.getElementById('schedule-list');
   let lastGroup = '';
   let html = '';
@@ -143,16 +158,20 @@ function renderSchedule(fixtures) {
     }
     const homeData = DATA.teams[f.home];
     const awayData = DATA.teams[f.away];
-    const homeCount = homeData ? homeData.filter(s=>Math.abs(s.a)>=currentThreshold).length : 0;
-    const awayCount = awayData ? awayData.filter(s=>Math.abs(s.a)>=currentThreshold).length : 0;
+    const homeStr = homeData ? homeData.filter(s=>s.a>=currentThreshold).length : 0;
+    const homeWk = homeData ? homeData.filter(s=>s.a<=-currentThreshold).length : 0;
+    const awayStr = awayData ? awayData.filter(s=>s.a>=currentThreshold).length : 0;
+    const awayWk = awayData ? awayData.filter(s=>s.a<=-currentThreshold).length : 0;
+    const showHome = homeStr > 0 || homeWk > 0;
+    const showAway = awayStr > 0 || awayWk > 0;
     html += '<div class="fixture">' +
       '<div class="meta">' + f.date + '</div>' +
       '<div class="teams">' +
         '<span class="team-name' + (homeData?' has-data':'') + '" onclick="goToTeam(\'' + f.home.replace(/'/g,"\\'") + '\')">' + f.home + '</span>' +
-        (homeCount ? '<span class="badge">' + homeCount + '</span>' : '') +
+        (showHome ? '<span class="counts"><span class="str-count">' + homeStr + 'S</span> <span class="wk-count">' + homeWk + 'W</span></span>' : '') +
         '<span class="vs"> vs </span>' +
         '<span class="team-name' + (awayData?' has-data':'') + '" onclick="goToTeam(\'' + f.away.replace(/'/g,"\\'") + '\')">' + f.away + '</span>' +
-        (awayCount ? '<span class="badge">' + awayCount + '</span>' : '') +
+        (showAway ? '<span class="counts"><span class="str-count">' + awayStr + 'S</span> <span class="wk-count">' + awayWk + 'W</span></span>' : '') +
       '</div>' +
       '<div class="meta">' + f.venue + '</div>' +
     '</div>';
@@ -171,8 +190,9 @@ function switchTab(tab) {
 function setThreshold(t, btn) {
   currentThreshold = t;
   document.querySelectorAll('.thresh-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
+  document.querySelectorAll('.thresh-btn[data-t="'+t+'"]').forEach(b => b.classList.add('active'));
   if (currentTeam) renderTeam(currentTeam);
+  renderScheduleList();
 }
 
 function drawPitchLines() {
@@ -221,7 +241,7 @@ function renderTeam(team) {
 
   currentStates.forEach((s, idx) => {
     const x = s.gx * 10 - 5, y = s.gy * 10 - 5;
-    const color = s.a > 0 ? '#2ecc71' : '#e74c3c';
+    const color = s.a > 0 ? '#3498db' : '#e74c3c';
     const opacity = 0.3 + 0.5 * (Math.abs(s.a) / maxAdv);
     const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
     rect.setAttribute('x', x); rect.setAttribute('y', y);
@@ -255,7 +275,9 @@ function showCardAt(idx) {
 
   // Highlight cell on pitch
   document.querySelectorAll('.cell').forEach(c => {
-    c.setAttribute('stroke-width', c.dataset.idx == idx ? '1.5' : '0.5');
+    const active = c.dataset.idx == idx;
+    c.setAttribute('stroke', active ? '#000000' : c.getAttribute('fill'));
+    c.setAttribute('stroke-width', active ? '1.5' : '0.5');
   });
 
   let html = `<div class="card">
@@ -298,10 +320,10 @@ function selectCategory(cat) {
   const strengths = entries.filter(e => e.a > 0).sort((a, b) => b.a - a.a).slice(0, 20);
   const weaknesses = entries.filter(e => e.a < 0).sort((a, b) => a.a - b.a).slice(0, 20);
 
-  let html = '<div class="card"><div class="card-title" style="color:#2ecc71;margin-bottom:8px">Strengths</div>';
+  let html = '<div class="card"><div class="card-title" style="color:#3498db;margin-bottom:8px">Strengths</div>';
   strengths.forEach(e => {
     const who = e.tr === 'teamA' ? e.team : e.team + ' (opp)';
-    html += `<div class="cat-team" onclick="goToTeam('${e.team}')"><span>${who} · (${e.gx},${e.gy})</span><span class="adv" style="color:#2ecc71">+${e.a.toFixed(4)}</span></div>`;
+    html += `<div class="cat-team" onclick="goToTeam('${e.team}')"><span>${who} · (${e.gx},${e.gy})</span><span class="adv" style="color:#3498db">+${e.a.toFixed(4)}</span></div>`;
   });
   html += '</div>';
   if (weaknesses.length > 0) {
