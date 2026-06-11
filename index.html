@@ -88,6 +88,10 @@ select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #2a3a
   </select>
   <div style="font-size:10px;color:#888;margin-bottom:4px">Minimum advantage to display:</div>
   <div class="threshold-btns" id="thresh-btns"></div>
+  <div id="pitch-labels" style="display:flex;justify-content:space-between;font-size:10px;color:#888;margin-bottom:2px;padding:0 2px">
+    <span>← Opp. goal</span>
+    <span id="team-goal-label">Team goal →</span>
+  </div>
   <div class="pitch-container">
     <svg class="pitch-svg" viewBox="0 0 120 80" id="pitch"></svg>
   </div>
@@ -226,6 +230,7 @@ function drawPitchLines() {
 
 function selectTeam(team) {
   currentTeam = team;
+  document.getElementById('team-goal-label').textContent = team + ' goal →';
   renderTeam(team);
 }
 
