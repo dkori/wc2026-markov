@@ -328,6 +328,11 @@ function navCard(dir) {
   if (newIdx >= 0 && newIdx < currentStates.length) showCardAt(newIdx);
 }
 
+function miniPitch(gx, gy, color) {
+  const x = gx * 10 - 5, y = gy * 10 - 5;
+  return `<svg viewBox="0 0 120 80" style="width:30px;height:20px;margin-right:6px;flex-shrink:0;border-radius:2px;background:#2d5a27"><rect x="${x}" y="${y}" width="10" height="10" fill="${color}" opacity="0.9"/><line x1="60" y1="0" x2="60" y2="80" stroke="#fff" stroke-width="1" opacity="0.3"/><rect x="0" y="0" width="120" height="80" fill="none" stroke="#fff" stroke-width="1.5" opacity="0.4"/></svg>`;
+}
+
 function selectCategory(cat) {
   const results = document.getElementById('cat-results');
   if (!cat) { results.innerHTML = ''; return; }
@@ -342,14 +347,16 @@ function selectCategory(cat) {
   let html = '<div class="card"><div class="card-title" style="color:#3498db;margin-bottom:8px">Strengths</div>';
   strengths.forEach(e => {
     const who = e.tr === 'teamA' ? e.team : e.team + ' (opp)';
-    html += `<div class="cat-team" onclick="goToTeamHigh('${e.team}')"><span>${who} · (${e.gx},${e.gy})</span><span class="adv" style="color:#3498db">+${e.a.toFixed(4)}</span></div>`;
+    const mini = miniPitch(e.gx, e.gy, '#3498db');
+    html += `<div class="cat-team" onclick="goToTeamHigh('${e.team}','${e.s}')">${mini}<span>${who} · (${e.gx},${e.gy})</span><span class="adv" style="color:#3498db">+${e.a.toFixed(4)}</span></div>`;
   });
   html += '</div>';
   if (weaknesses.length > 0) {
     html += '<div class="card"><div class="card-title" style="color:#e74c3c;margin-bottom:8px">Weaknesses</div>';
     weaknesses.forEach(e => {
       const who = e.tr === 'teamA' ? e.team : e.team + ' (opp)';
-      html += `<div class="cat-team" onclick="goToTeamHigh('${e.team}')"><span>${who} · (${e.gx},${e.gy})</span><span class="adv" style="color:#e74c3c">${e.a.toFixed(4)}</span></div>`;
+      const mini = miniPitch(e.gx, e.gy, '#e74c3c');
+      html += `<div class="cat-team" onclick="goToTeamHigh('${e.team}','${e.s}')">${mini}<span>${who} · (${e.gx},${e.gy})</span><span class="adv" style="color:#e74c3c">${e.a.toFixed(4)}</span></div>`;
     });
     html += '</div>';
   }
@@ -362,10 +369,16 @@ function goToTeam(team) {
   selectTeam(team);
 }
 
-function goToTeamHigh(team) {
+function goToTeamHigh(team, state) {
   currentThreshold = DATA.thresholds[2];
   document.querySelectorAll('.thresh-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-t') == DATA.thresholds[2]));
-  goToTeam(team);
+  switchTabDirect('team');
+  document.getElementById('team-select').value = team;
+  selectTeam(team);
+  if (state) {
+    const idx = currentStates.findIndex(s => s.s === state);
+    if (idx >= 0) showCardAt(idx);
+  }
 }
 
 function switchTabDirect(tab) {
