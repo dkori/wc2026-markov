@@ -60,6 +60,8 @@ select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #2a3a
 <body>
 <h1>🐠 Goldfish G+</h1>
 <p class="subtitle">Memoryless Markov transition model · WC 2026</p>
+<p style="font-size:10px;color:#b8860b;margin-bottom:8px;line-height:1.5;background:#b8860b15;padding:6px 8px;border-radius:4px">⚠️ Proof of concept — insights are based on limited training data (3–6 matches per team). Not predictive. For methodology demonstration only.</p>
+<p style="font-size:9px;color:#666;margin-bottom:10px">Data provided by <a href="https://github.com/statsbomb/open-data" style="color:#888">StatsBomb Open Data</a>.</p>
 <details style="margin-bottom:12px;background:#1a2634;border:1px solid #2a3a4a;border-radius:6px;padding:10px;font-size:11px;color:#aaa">
 <summary style="cursor:pointer;color:#e0e0e0;font-size:12px;font-weight:600">How it works ▾</summary>
 <p style="margin-top:8px;line-height:1.6">Every on-ball action in a match (pass, carry, duel, etc.) is a state in a Markov chain, defined by action type, pitch zone, and which team has the ball. We compute <strong>absorption probabilities</strong>: given possession is in state X, what's the probability it ends in a goal for vs. against?</p>
