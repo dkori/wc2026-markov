@@ -68,7 +68,7 @@ select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #2a3a
 <p style="margin-top:6px;line-height:1.6">A hierarchical Bayesian prior (2.2M transitions from 314 matches across World Cup 2018 & 2022, Euro 2020 & 2024, AFCON 2023, and Copa América 2024) regularizes each team's observed transitions. Team-specific updates use World Cup 2022 plus each confederation's most recent continental tournament (Euro 2024, AFCON 2023, Copa 2024).</p>
 <p style="margin-top:6px;line-height:1.6">The <strong>advantage</strong> is how much a team's net scoring probability from a state exceeds the prior average. Positive = strength, negative = weakness.</p>
 <p style="margin-top:6px;line-height:1.6">Shots that directly led to goals are excluded — the insight is in the buildup patterns that shift scoring probability before the final shot.</p>
-<p style="margin-top:6px;line-height:1.6">The <strong>G+ Rating</strong> is a summary score: each state's advantage weighted by how often an average team occupies that state (prior frequency). It represents expected net goal probability added per possession, scaled ×10,000 for readability. Positive = above average, negative = below.</p>
+<p style="margin-top:6px;line-height:1.6">The <strong>GG+</strong> is a summary score: each state's advantage weighted by how often an average team occupies that state (prior frequency). It represents expected net goal probability added per possession, scaled ×10,000 for readability. Positive = above average, negative = below.</p>
 </details>
 <div class="tabs">
   <div class="tab active" onclick="switchTab('schedule')">Schedule</div>
@@ -175,13 +175,13 @@ function renderScheduleList() {
     html += '<div class="fixture">' +
       '<div class="team-block">' +
         '<span class="team-name' + (homeData?' has-data':'') + '" onclick="goToTeam(\'' + f.home.replace(/'/g,"\\'") + '\')">' + f.home + (homeData ? ' 📊' : '') + '</span>' +
-        (homeGplus!=null ? '<span class="meta">G+ ' + gpFmt(homeGplus) + '</span>' : '') +
+        (homeGplus!=null ? '<span class="meta">GG+ ' + gpFmt(homeGplus) + '</span>' : '') +
         '<span class="meta">' + f.date + ' · ' + (f.time||'') + ' ET</span>' +
       '</div>' +
       '<div class="vs-block">vs</div>' +
       '<div class="team-block">' +
         '<span class="team-name' + (awayData?' has-data':'') + '" onclick="goToTeam(\'' + f.away.replace(/'/g,"\\'") + '\')">' + f.away + (awayData ? ' 📊' : '') + '</span>' +
-        (awayGplus!=null ? '<span class="meta">G+ ' + gpFmt(awayGplus) + '</span>' : '') +
+        (awayGplus!=null ? '<span class="meta">GG+ ' + gpFmt(awayGplus) + '</span>' : '') +
         '<span class="meta">' + f.venue + '</span>' +
       '</div>' +
     '</div>';
@@ -227,7 +227,7 @@ function selectTeam(team) {
   const gp = DATA.gplus?.[team];
   if (gp != null) {
     const color = gp >= 0 ? '#3498db' : '#e74c3c';
-    gpEl.innerHTML = `G+ Rating: <span style="color:${color};font-weight:600">${gp>=0?'+':''}${gp.toFixed(2)}</span>`;
+    gpEl.innerHTML = `GG+: <span style="color:${color};font-weight:600">${gp>=0?'+':''}${gp.toFixed(2)}</span>`;
     gpEl.style.display = '';
   } else {
     gpEl.style.display = 'none';
