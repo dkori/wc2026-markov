@@ -54,9 +54,6 @@ select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #2a3a
 .fixture .team-name { cursor: pointer; font-size: 13px; display: block; }
 .fixture .team-name.has-data { color: #fff; font-weight: 600; }
 .fixture .meta { font-size: 10px; color: #666; display: block; }
-.fixture .counts { font-size: 9px; display: block; margin-top: 2px; }
-.fixture .counts .str-count { color: #3498db; }
-.fixture .counts .wk-count { color: #e74c3c; }
 .group-header { font-size: 12px; color: #e94560; margin: 12px 0 6px; font-weight: 600; }
 </style>
 </head>
@@ -77,9 +74,7 @@ select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #2a3a
 </div>
 
 <div id="schedule-view">
-  <div style="font-size:10px;color:#888;margin-bottom:4px">Minimum advantage to display:</div>
-  <div class="threshold-btns" id="schedule-thresh-btns"></div>
-  <div style="font-size:10px;color:#888;margin-bottom:10px;text-align:center"><span style="color:#3498db">■</span> strengths &nbsp; <span style="color:#e74c3c">■</span> weaknesses &nbsp; at selected threshold · tap a team to view details</div>
+  <div style="font-size:11px;color:#888;margin-bottom:10px;text-align:center">Tap a highlighted team to explore their tactical profile</div>
   <div id="schedule-list"></div>
 </div>
 <div id="team-view" style="display:none">
@@ -138,17 +133,14 @@ fetch('data/teams.json').then(r => r.json()).then(d => {
     catSel.appendChild(opt);
   });
   const tDiv = document.getElementById('thresh-btns');
-  const sDIv = document.getElementById('schedule-thresh-btns');
   const labels = ['Low', 'Mid', 'High'];
   d.thresholds.forEach((t, i) => {
-    [tDiv, sDIv].forEach(container => {
-      const btn = document.createElement('div');
-      btn.className = 'thresh-btn' + (i === 1 ? ' active' : '');
-      btn.textContent = labels[i] + ' (' + t + ')';
-      btn.setAttribute('data-t', t);
-      btn.onclick = () => setThreshold(t, btn);
-      container.appendChild(btn);
-    });
+    const btn = document.createElement('div');
+    btn.className = 'thresh-btn' + (i === 1 ? ' active' : '');
+    btn.textContent = labels[i] + ' (' + t + ')';
+    btn.setAttribute('data-t', t);
+    btn.onclick = () => setThreshold(t, btn);
+    tDiv.appendChild(btn);
   });
   drawPitchLines();
   // Load fixtures
@@ -173,22 +165,14 @@ function renderScheduleList() {
     }
     const homeData = DATA.teams[f.home];
     const awayData = DATA.teams[f.away];
-    const homeStr = homeData ? homeData.filter(s=>s.a>=currentThreshold).length : 0;
-    const homeWk = homeData ? homeData.filter(s=>s.a<=-currentThreshold).length : 0;
-    const awayStr = awayData ? awayData.filter(s=>s.a>=currentThreshold).length : 0;
-    const awayWk = awayData ? awayData.filter(s=>s.a<=-currentThreshold).length : 0;
-    const showHome = homeStr > 0 || homeWk > 0;
-    const showAway = awayStr > 0 || awayWk > 0;
     html += '<div class="fixture">' +
       '<div class="team-block">' +
-        '<span class="team-name' + (homeData?' has-data':'') + '" onclick="goToTeam(\'' + f.home.replace(/'/g,"\\'") + '\')">' + f.home + '</span>' +
-        (showHome ? '<span class="counts"><span class="str-count">' + homeStr + ' str</span> · <span class="wk-count">' + homeWk + ' wk</span></span>' : '') +
-        '<span class="meta">' + f.date + '</span>' +
+        '<span class="team-name' + (homeData?' has-data':'') + '" onclick="goToTeam(\'' + f.home.replace(/'/g,"\\'") + '\')">' + f.home + (homeData ? ' 📊' : '') + '</span>' +
+        '<span class="meta">' + f.date + ' · ' + (f.time||'') + ' ET</span>' +
       '</div>' +
       '<div class="vs-block">vs</div>' +
       '<div class="team-block">' +
-        '<span class="team-name' + (awayData?' has-data':'') + '" onclick="goToTeam(\'' + f.away.replace(/'/g,"\\'") + '\')">' + f.away + '</span>' +
-        (showAway ? '<span class="counts"><span class="str-count">' + awayStr + ' str</span> · <span class="wk-count">' + awayWk + ' wk</span></span>' : '') +
+        '<span class="team-name' + (awayData?' has-data':'') + '" onclick="goToTeam(\'' + f.away.replace(/'/g,"\\'") + '\')">' + f.away + (awayData ? ' 📊' : '') + '</span>' +
         '<span class="meta">' + f.venue + '</span>' +
       '</div>' +
     '</div>';
@@ -209,7 +193,6 @@ function setThreshold(t, btn) {
   document.querySelectorAll('.thresh-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.thresh-btn[data-t="'+t+'"]').forEach(b => b.classList.add('active'));
   if (currentTeam) renderTeam(currentTeam);
-  renderScheduleList();
 }
 
 function drawPitchLines() {
